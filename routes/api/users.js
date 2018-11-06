@@ -9,6 +9,7 @@ const router= express.Router();
 
 //Load input validation
 const validateRegisterInput = require('../../validation/register');
+const validateLoginInput = require('../../validation/login');
 
 //Load User model
 const User= require('../../models/User');
@@ -48,7 +49,7 @@ router.post('/register',(req,res) => {
                     bcrypt.hash(newUser.password,salt,(err,hash)=>{
                         if(err) throw err;
                         newUser.password=hash;
-                        newUser.save()
+                        newUser.save() //Here new USER is getting inserted into mongo DB 
                                .then(user => res.json(user))
                                .catch(err => console.log(err));
                     })
@@ -61,17 +62,22 @@ router.post('/register',(req,res) => {
 // @desc Login Users / Returning JWT token
 // @access PUBLIC
 router.post("/login", (req,res) => {
+    const { errors, isValid } = validateLoginInput(req.body);
+    if (!isValid) {
+        return res.status(400).json(errors);
+    }
     const email=req.body.email;
-    const password= req.body.password;
+    const password= req.body.password; //Gets Password from login form
 
     //find user by email
     User.findOne({email})
         .then(user => {
             //check for user
             if(!user){
-                return res.status(404).json({email: "User not found"});
+                errors.email = "User not found";
+                return res.status(404).json(errors);
             }
-            bcrypt.compare(password,user.password)
+            bcrypt.compare(password,user.password) //Decrypts password and compares against password from DB.
                 .then(isMatch => {
                     if(isMatch){
                         //res.json({msg:"Success"});
@@ -88,7 +94,8 @@ router.post("/login", (req,res) => {
                         );
                     }
                     else{
-                        return res.status(400).json({password:"Password Incorrect"});
+                        errors.password = "Password Incorrect";
+                        return res.status(400).json(errors);
                     }
                 })
         });
