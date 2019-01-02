@@ -20,7 +20,7 @@ const ProfileSchema = new Schema({
     location:{
         type:String
     },
-    style:{
+    status:{
         type:String,
         required:true
     },
